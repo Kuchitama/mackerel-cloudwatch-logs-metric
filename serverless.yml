@@ -1,16 +1,18 @@
 service: mackerel-cloudwatch-logs-metric
-# app and org for use with dashboard.serverless.com
-#app: your-app-name
-#org: your-org-name
 
-frameworkVersion: ">=1.58.0"
+frameworkVersion: ">=1.59.1"
 
 provider:
   name: aws
   runtime: nodejs12.x
   environment:
     MACKEREL_APIKEY: ${ssm:MACKEREL_APIKEY~true}
-    LOG_GROUP: /aws/lambda/mackerel-cloudwatch-logs-metric-dev-queue
+    MACKEREL_SERVICE: Lambda
+    LOG_GROUPS: 
+      Fn::Join:
+        - ","
+        - - /aws/lambda/mackerel-cloudwatch-logs-metric-dev-queue
+          - /aws/lambda/mackerel-cloudwatch-logs-metric-dev-dequeue
 # you can overwrite defaults here
 #  stage: dev
 #  region: us-east-1
@@ -19,36 +21,53 @@ provider:
     - Effect: "Allow"
       Action:
         - "logs:StartQuery"
-        # - "logs:ListTagsLogGroup"
-        # - "logs:DescribeLogGroups"
-        # - "logs:DescribeLogStreams"
-        # - "logs:DescribeSubscriptionFilters"
-        # - "logs:GetLogEvents"
-        # - "logs:DescribeMetricFilters"
-        # - "logs:FilterLogEvents"
-        # - "logs:GetLogGroupFields"
       Resource: "arn:aws:logs:*:*:log-group:*"
     - Effect: "Allow"
       Action:
         - "logs:GetQueryResults"
         - "logs:StopQuery"
         - "logs:DescribeQueries"
-        # - "logs:DescribeExportTasks"
-        # - "logs:GetLogRecord"
-        # - "logs:TestMetricFilter"
-        # - "logs:DescribeResourcePolicies"
-        # - "logs:GetLogDelivery"
-        # - "logs:DescribeDestinations"
-        # - "logs:ListLogDeliveries"
       Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:DescribeStream"
+        - "dynamodb:GetRecords"
+        - "dynamodb:GetShardIterator"
+        - "dynamodb:ListStreams"
+      Resource: "arn:aws:dynamodb:*:*:table/queryTable/stream/*"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:Scan"
+      Resource: "arn:aws:dynamodb:*:*:table/queryTable"
 
 package:
   include:
-    - id
     - mkr
 
 functions:
   queue:
     handler: handler.queue
     events:
-     - schedule: rate(24 hours) # TODO: Fix rate
+     - schedule: rate(5 minutes)
+  dequeue:
+    handler: handler.dequeue
+    events:
+     - schedule: rate(5 minutes)
+
+resources:
+  Resources:
+    queryTable: 
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: queryTable
+        AttributeDefinitions:
+          - AttributeName: queryId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: queryId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
