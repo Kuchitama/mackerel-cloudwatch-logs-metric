@@ -5,12 +5,5 @@ jspm_packages
 # Serverless directories
 .serverless
 
-# Webpack directories
-.webpack
-
-# IDE
-vscode/
-
-mackerel-agent
-mkr
 id
+mkr
