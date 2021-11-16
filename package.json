@@ -4,7 +4,7 @@
   "description": "Monitor metric from Cloud Watch Logs via Mackerel",
   "main": "handler.js",
   "dependencies": {
-    "aws-sdk": "^2.585.0",
+    "aws-sdk": "^2.814.0",
     "log4js": "^6.1.0",
     "moment": "^2.24.0",
     "shelljs": "^0.8.3"
