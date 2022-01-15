@@ -7,7 +7,7 @@
     "aws-sdk": "^2.585.0",
     "log4js": "^6.1.0",
     "moment": "^2.24.0",
-    "shelljs": "^0.8.3"
+    "shelljs": "^0.8.5"
   },
   "devDependencies": {
     "serverless": "^1.59.1"
